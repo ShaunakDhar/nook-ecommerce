@@ -18,6 +18,8 @@ A complete local demonstration with a customer storefront, a Node.js backend, an
 ![Administrator workspace](docs/screenshots/dashboard.png)
 
 
+[Open the live Render demo](https://nook-ecommerce.onrender.com)
+
 ## Quick start
 
 1. Double-click **start.cmd**.
@@ -141,11 +143,11 @@ With compatible Node.js:
 node --test tests/app.test.mjs
 ```
 
-Or double-click **test.cmd** on this laptop. Tests create separate temporary databases and do not change your demo database. The 12 integration tests cover authentication, ownership, cart changes, stock validation, successful checkout, full rollback after declined payment, concurrent requests competing for the final unit, cancellation, pending payments, fulfillment, admin validation, SQL labs, constraints, cross-origin rejection, persistence after restart, and reset.
+Or double-click **test.cmd** on this laptop. Tests create separate temporary databases and do not change your demo database. The 13 integration tests cover authentication, ownership, cart changes, stock validation, successful checkout, full rollback after declined payment, concurrent requests competing for the final unit, cancellation, pending payments, fulfillment, admin validation, SQL labs, constraints, cross-origin rejection, persistence after restart, and reset.
 
 ## Demo limitations
 
-This is a local academic demonstration. It uses HTTP on loopback and includes known demo credentials. It does not include a real payment provider, email, password recovery, tax calculation, delivery service integration, or production load testing. Product illustrations represent sample products. The single-process server uses synchronous SQLite operations, which are suitable for the classroom demo. Do not expose this local server publicly without a separate deployment and security design.
+This is a local academic demonstration. It uses HTTP on loopback and includes known demo credentials. It does not include a real payment provider, email, password recovery, tax calculation, delivery service integration, or production load testing. Product illustrations represent sample products. The single-process server uses synchronous SQLite operations, which are suitable for the classroom demo. The hosted version is a shared academic sandbox with fictional data and public demo accounts. It is not a production storefront.
 
 ## References
 
@@ -172,4 +174,4 @@ References: https://render.com/docs/free and https://render.com/docs/web-service
 
 Application source, database schema, fictional seed data, tests, and the demo guide are included. Generated SQLite databases, saved sessions, local runtime binaries, and environment files are excluded. Each clone starts with its own database.
 
-GitHub stores the source code. Run the full Node.js and SQLite application locally using the instructions above. GitHub Pages cannot run this backend.
+GitHub stores the source code. Run locally using the instructions above, or open the hosted Render demo. GitHub Pages cannot run this backend.
