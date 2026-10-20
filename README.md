@@ -7,6 +7,17 @@ Shaunak Dhar, Parneeca Mahale, and Nimisha Gaurav
 
 A complete local demonstration with a customer storefront, a Node.js backend, and a persistent SQLite database. All assets are included. After setup, the app works without internet. Payments are simulations and do not transfer money.
 
+## Screenshots
+
+### Customer storefront
+
+![Customer storefront](docs/screenshots/storefront.png)
+
+### Administrator workspace
+
+![Administrator workspace](docs/screenshots/dashboard.png)
+
+
 ## Quick start
 
 1. Double-click **start.cmd**.
@@ -147,15 +158,7 @@ This is a local academic demonstration. It uses HTTP on loopback and includes kn
 
 Original SVG product illustrations and interface icons are included in this project. No remote image or font services are required.
 
-## Screenshots
 
-### Customer storefront
-
-![Customer storefront](docs/screenshots/storefront.png)
-
-### Administrator workspace
-
-![Administrator workspace](docs/screenshots/dashboard.png)
 
 ## Repository contents
 
