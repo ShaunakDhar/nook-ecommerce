@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: nook-ecommerce
+    runtime: node
+    plan: free
+    buildCommand: node --version
+    startCommand: node server.mjs
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0

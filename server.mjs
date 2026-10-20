@@ -20,11 +20,14 @@ const integer = (value,label,min=0,max=1000000) => {
 };
 const email = value => { const e = str(value,'Email',3,160).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) fail(400,'Enter a valid email address.'); return e; };
 const password = value => { if (typeof value !== 'string' || value.length < 8 || value.length > 128) fail(400,'Password must contain 8–128 characters.'); return value; };
-const cookie = token => `nook_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200`;
+const sessionCookie = (token,secure) => `nook_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${secure?'; Secure':''}`;
 const cookieToken = req => (req.headers.cookie || '').match(/(?:^|;\s*)nook_session=([a-f0-9]{64})/)?.[1];
 const ASSETS = ['keyboard','mouse','notebook','headphones','lamp','backpack','bottle','pens','speaker','organizer','tote','planner'];
 
-export function createApplication({databasePath=process.env.DB_PATH || path.join(ROOT,'data/nook.sqlite')}={}) {
+export function createApplication({databasePath=process.env.DB_PATH || path.join(ROOT,'data/nook.sqlite'),publicOrigin=process.env.PUBLIC_ORIGIN || process.env.RENDER_EXTERNAL_URL || ''}={}) {
+  const externalURL=publicOrigin?new URL(publicOrigin):null;
+  if(externalURL && (externalURL.protocol!=='https:' || externalURL.username || externalURL.password || externalURL.pathname!=='/' || externalURL.search || externalURL.hash))throw new Error('PUBLIC_ORIGIN must be an HTTPS origin.');
+  const cookie=token=>sessionCookie(token,Boolean(externalURL));
   const db = openDatabase(databasePath);
   const attempts = new Map();
   const dummyHash = hashPassword('random-unusable-password');
@@ -196,10 +199,11 @@ export function createApplication({databasePath=process.env.DB_PATH || path.join
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','same-origin');
     res.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
     try {
-      if(!/^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(req.headers.host||''))fail(403,'Local access only.');
+      const host=req.headers.host||'';
+      if(!/^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host) && host!==externalURL?.host)fail(403,'Host is not allowed.');
       const url=new URL(req.url,'http://'+req.headers.host);
       if(url.pathname.startsWith('/api/')) {
-        if(!['GET','HEAD'].includes(req.method) && req.headers.origin && req.headers.origin!==url.origin)fail(403,'Cross-origin requests are not allowed.');
+        if(!['GET','HEAD'].includes(req.method) && req.headers.origin && req.headers.origin!==(externalURL?.origin || url.origin))fail(403,'Cross-origin requests are not allowed.');
         const r=routes.find(r=>r.method===req.method&&r.pattern.test(url.pathname));if(!r)fail(404,'Endpoint not found.');
         const body=['POST','PUT','PATCH','DELETE'].includes(req.method)?await bodyJSON(req):{};
         const value=r.handler({req,res,url,body,params:url.pathname.match(r.pattern).slice(1)});return send(200,value);
@@ -209,7 +213,9 @@ export function createApplication({databasePath=process.env.DB_PATH || path.join
       if(!filename.startsWith(path.join(ROOT,'public')+path.sep))fail(404,'File not found.');
       const ext=path.extname(filename);const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};
       if(!types[ext]||!existsSync(filename))fail(404,'File not found.');
-      const data=await readFile(filename);res.writeHead(200,{'Content-Type':types[ext],'Cache-Control':ext==='.html'?'no-store':'no-cache'});res.end(req.method==='HEAD'?undefined:data);
+      let data=await readFile(filename);
+      if(externalURL && ext==='.html')data=Buffer.from(data.toString().replace('Free delivery on every demo order','Shared demo: fictional information only. Data may reset.'));
+      res.writeHead(200,{'Content-Type':types[ext],'Cache-Control':ext==='.html'?'no-store':'no-cache'});res.end(req.method==='HEAD'?undefined:data);
     }catch(e){
       let status=e.status||500,message=e.status?e.message:'Something went wrong. Please try again.';
       if(e.code?.startsWith('ERR_SQLITE')||/constraint failed|Insufficient stock/.test(e.message)){status=409;message=/Insufficient stock/.test(e.message)?'Insufficient stock. Refresh your bag and try again.':'The change conflicts with a database constraint.';}
@@ -224,6 +230,7 @@ export function createApplication({databasePath=process.env.DB_PATH || path.join
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const app=createApplication();const port=Number(process.env.PORT||4173);
   app.server.on('error',e=>{console.error(e.code==='EADDRINUSE'?`Port ${port} is in use. Open http://localhost:${port}, or choose another PORT.`:e.message);app.db.close();process.exitCode=1;});
-  app.server.listen(port,'127.0.0.1',()=>console.log(`\n  Nook is ready: http://localhost:${port}\n  Customer: asha@example.com / Demo@123\n  Admin: admin@nook.local / Admin@123\n  Payments are simulated. Press Ctrl+C to stop.\n`));
+  const host=process.env.HOST || (process.env.RENDER?'0.0.0.0':'127.0.0.1');
+  app.server.listen(port,host,()=>console.log(`\n  Nook is ready: ${process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`}\n  Shared academic demo with simulated payments. Press Ctrl+C to stop.\n`));
   for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>app.close().then(()=>process.exit(0)));
 }

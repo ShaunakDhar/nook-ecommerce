@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import http from 'node:http';
 import { createApplication } from '../server.mjs';
 
-async function fixture(databasePath=':memory:') {
- const app=createApplication({databasePath});
+async function fixture(databasePath=':memory:',options={}) {
+ const app=createApplication({databasePath,...options});
  await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
  const base='http://127.0.0.1:'+app.server.address().port;
  function client(){let cookie='';return async function request(url,method='GET',body,extraHeaders={}){
@@ -22,6 +23,23 @@ async function fixture(databasePath=':memory:') {
 async function withFixture(fn){const f=await fixture();try{await fn(f);}finally{await f.close();}}
 const key=n=>'test-checkout-key-'+n;
 const checkout=(n,outcome='success',method='UPI')=>({key:key(n),address:'12 Demo Street, Chennai 600001',outcome,method});
+
+test('hosted demo accepts its HTTPS origin, secures cookies, and rejects unrelated hosts and origins',async()=>{
+ const f=await fixture(':memory:',{publicOrigin:'https://nook-review.onrender.com'});
+ try {
+  const c=f.client();
+  const headers={Host:'nook-review.onrender.com',Origin:'https://nook-review.onrender.com'};
+  const login=await c('/api/auth/login','POST',{email:'asha@example.com',password:'Demo@123'},headers);
+  assert.equal(login.status,200);assert.match(login.headers.get('set-cookie'),/; Secure/);
+  assert.equal((await c('/api/cart','GET',undefined,headers)).status,200);
+  assert.equal((await c('/api/auth/login','POST',{email:'asha@example.com',password:'Demo@123'},{...headers,Origin:'https://unrelated.example'})).status,403);
+  const hostStatus=host=>new Promise((resolve,reject)=>{http.get(f.base+'/api/catalog',{headers:{Host:host}},res=>{res.resume();resolve(res.statusCode);}).on('error',reject);});
+  assert.equal(await hostStatus('unrelated.example'),403);
+  assert.equal(await hostStatus('nook-review.onrender.com'),200);
+  assert.match((await c('/','GET',undefined,headers)).data,/Shared demo: fictional information only/);
+  assert.equal((await c('/api/health')).status,200);
+ } finally {await f.close();}
+});
 
 test('public catalog and static app load without exposing protected data',()=>withFixture(async f=>{
  const c=f.client();const catalog=await c('/api/catalog');assert.equal(catalog.status,200);assert.equal(catalog.data.products.length,12);

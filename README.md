@@ -158,6 +158,14 @@ This is a local academic demonstration. It uses HTTP on loopback and includes kn
 
 Original SVG product illustrations and interface icons are included in this project. No remote image or font services are required.
 
+## Render free demo hosting
+
+Deploy this repository as a Node.js Web Service using `render.yaml`, or set the build command to `node --version`, the start command to `node server.mjs`, and the health check path to `/api/health`. The `.node-version` file selects the tested Node.js runtime. Render supplies `PORT` and `RENDER_EXTERNAL_URL`; the server binds to `0.0.0.0`, allows the configured HTTPS origin, and marks session cookies Secure. Local launches retain loopback access.
+
+This is a shared academic sandbox with public demo accounts, including administrator controls. Use fictional information only. Render Free has temporary filesystem storage: accounts, carts, orders, and sessions can reset when the service restarts, redeploys, or spins down. First launch creates fresh seed data. It may take time to wake after inactivity. A paid service with a persistent disk is needed to preserve SQLite data across those events. No paid disk is configured here.
+
+References: https://render.com/docs/free and https://render.com/docs/web-services
+
 
 
 ## Repository contents
