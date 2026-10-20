@@ -1,0 +1,9 @@
+{
+  "name": "nook-ecommerce-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "BCSE302L e-commerce inventory and order processing project",
+  "engines": { "node": ">=22.13.0" },
+  "scripts": { "start": "node server.mjs", "test": "node --test tests/*.test.mjs" }
+}
